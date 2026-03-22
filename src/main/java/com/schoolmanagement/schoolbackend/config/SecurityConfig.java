@@ -3,6 +3,7 @@ package com.schoolmanagement.schoolbackend.config;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -24,6 +25,9 @@ import org.springframework.security.config.annotation.authentication.configurati
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+	
+	@Value("${app.cors.allowed-origins}")
+    private List<String> allowedOrigins;
 
 	// Define the Password Encoder
 	@Bean
@@ -85,7 +89,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         
         // Allow your Angular Frontend
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedOrigins(allowedOrigins);
         
         // Allow all standard methods
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
