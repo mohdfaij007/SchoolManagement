@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Report Card</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; font-size: 12px; color: #333; }
+        .page { width: 100%; margin: 0 auto; padding: 20px; box-sizing: border-box; }
+        
+        .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 24px; text-transform: uppercase; color: #000; }
+        .header p { margin: 5px 0; font-size: 14px; }
+        .header h3 { margin-top: 10px; text-decoration: underline; }
+
+        .profile-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
+        .profile-table td, .profile-table th { padding: 6px; text-align: left; }
+        .profile-table th { width: 20%; color: #555; }
+        .profile-table td { width: 30%; font-weight: bold; border-bottom: 1px dotted #ccc; }
+
+        .exam-section { margin-bottom: 20px; }
+        .exam-title { background-color: #eee; padding: 5px; border: 1px solid #000; text-align: center; font-weight: bold; }
+        
+        .marks-table { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-top: -1px; }
+        .marks-table th, .marks-table td { border: 1px solid #000; padding: 8px; text-align: center; }
+        .marks-table th { background-color: #f9f9f9; }
+        .text-left { text-align: left; }
+        .grade { font-weight: bold; }
+
+        .summary-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .summary-table td { border: 1px solid #000; padding: 10px; vertical-align: top; width: 50%; }
+        .summary-table h4 { margin: 0 0 10px 0; border-bottom: 1px solid #000; padding-bottom: 5px; }
+
+        .signatures { width: 100%; margin-top: 50px; }
+        .signatures td { text-align: center; width: 33%; vertical-align: bottom; height: 60px; }
+        .sign-line { border-top: 1px solid #000; width: 80%; margin: 0 auto 5px auto; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="header">
+            <h1 th:text="${school.schoolName}">SCHOOL NAME</h1>
+            <p th:text="${school.schoolAddress}">School Address</p>
+            <p>Affiliation No: <span th:text="${school.affiliationNumber}">12345</span> | Contact: <span th:text="${school.contactPhone}">9876543210</span></p>
+            <h3>ACADEMIC PERFORMANCE REPORT (<span th:text="${report.sessionName}">2025-26</span>)</h3>
+        </div>
+
+        <table class="profile-table">
+            <tr>
+                <th>Student Name</th><td th:text="${report.studentName}">John Doe</td>
+                <th>Admission No.</th><td th:text="${report.admissionNumber}">A001</td>
+            </tr>
+            <tr>
+                <th>Class &amp; Section</th><td th:text="${report.className} + ' - ' + ${report.sectionName}">10 - A</td>
+                <th>Date of Birth</th><td th:text="${report.dateOfBirth}">01-Jan-2010</td>
+            </tr>
+            <tr>
+                <th>Father's Name</th><td th:text="${report.fatherName}">Mr. Father</td>
+                <th>Mother's Name</th><td th:text="${report.motherName}">Mrs. Mother</td>
+            </tr>
+        </table>
+
+        <div class="exam-section" th:each="exam : ${report.examResults}">
+            <div class="exam-title" th:text="${exam.examName} + ' EXAMINATION'">TERM 1 EXAMINATION</div>
+            <table class="marks-table">
+                <thead>
+                    <tr>
+                        <th class="text-left">Subject</th>
+                        <th>Max Marks</th>
+                        <th>Passing Marks</th>
+                        <th>Marks Obtained</th>
+                        <th>Grade</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="sub : ${exam.subjects}">
+                        <td class="text-left" th:text="${sub.subjectName}">Maths</td>
+                        <td th:text="${sub.maxMarks}">100</td>
+                        <td th:text="${sub.passingMarks}">33</td>
+                        <td th:text="${sub.marksObtained}" style="font-weight:bold;">85</td>
+                        <td class="grade" th:text="${sub.grade}">A</td>
+                        <td th:text="${sub.remarks}">Good</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr style="background-color:#f1f1f1; font-weight:bold;">
+                        <td class="text-left">OVERALL TOTAL</td>
+                        <td th:text="${exam.totalMaxMarks}">500</td>
+                        <td>-</td>
+                        <td th:text="${exam.totalMarksObtained}">400</td>
+                        <td class="grade" th:text="${exam.overallGrade}">A</td>
+                        <td th:text="'Percentage: ' + ${exam.percentage} + '%'">Percentage: 80%</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <table class="summary-table">
+            <tr>
+                <td>
+                    <h4>Attendance Summary</h4>
+                    <p>Total Working Days: <strong th:text="${report.totalWorkingDays}">200</strong></p>
+                    <p>Total Present Days: <strong th:text="${report.presentDays}">180</strong></p>
+                    <p>Attendance Percentage: <strong th:text="${report.attendancePercentage} + '%'">90%</strong></p>
+                </td>
+                <td>
+                    <h4>Class Teacher's Remarks</h4>
+                    <p th:text="${report.classTeacherRemarks}">Keep it up!</p>
+                </td>
+            </tr>
+        </table>
+
+        <table class="signatures">
+            <tr>
+                <td><div class="sign-line"></div>Class Teacher</td>
+                <td><div class="sign-line"></div>Parent / Guardian</td>
+                <td><div class="sign-line"></div>Principal</td>
+            </tr>
+        </table>
+    </div>
+</body>
+</html>

@@ -8,6 +8,7 @@ import com.schoolmanagement.schoolbackend.repository.SectionRepository;
 import com.schoolmanagement.schoolbackend.repository.StandardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,6 +37,14 @@ public class MasterController {
     public List<AcademicSession> getAllSessions() {
         return sessionRepo.findAll();
     }
+    
+ // GET /api/master/session/active
+    @GetMapping("/session/active")
+    public ResponseEntity<AcademicSession> getActiveSession() {
+        return sessionRepo.findByIsActiveTrue()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 
     // --- STANDARD (CLASS) APIs ---
     @PostMapping("/standard/add")
@@ -57,5 +66,53 @@ public class MasterController {
     @GetMapping("/section/all")
     public List<Section> getAllSections() {
         return sectionRepo.findAll();
+    }
+    
+ // standard ke according section load krne ke liye.
+
+    
+    
+    
+    
+    
+ // --- DELETE APIs ---
+
+    @DeleteMapping("/session/delete/{id}")
+    public ResponseEntity<?> deleteSession(@PathVariable Long id) {
+        sessionRepo.deleteById(id);
+        return ResponseEntity.ok().body("Session deleted successfully");
+    }
+
+    @DeleteMapping("/standard/delete/{id}")
+    public ResponseEntity<?> deleteStandard(@PathVariable Long id) {
+        standardRepo.deleteById(id);
+        return ResponseEntity.ok().body("Class deleted successfully");
+    }
+
+    @DeleteMapping("/section/delete/{id}")
+    public ResponseEntity<?> deleteSection(@PathVariable Long id) {
+        sectionRepo.deleteById(id);
+        return ResponseEntity.ok().body("Section deleted successfully");
+    }
+    
+    
+    
+    @PutMapping("/session/mark-active/{id}")
+    @Transactional
+    public ResponseEntity<?> markSessionActive(@PathVariable Long id) {
+        // 1. Pehle saare sessions ko Inactive (false) kar do
+        List<AcademicSession> allSessions = sessionRepo.findAll();
+        for(AcademicSession s : allSessions) {
+            s.setActive(false);
+        }
+        sessionRepo.saveAll(allSessions);
+
+        // 2. Ab sirf selected session ko Active (true) kar do
+        AcademicSession targetSession = sessionRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Session not found"));
+        targetSession.setActive(true);
+        sessionRepo.save(targetSession);
+
+        return ResponseEntity.ok().body("Session " + targetSession.getSessionName() + " is now Active.");
     }
 }

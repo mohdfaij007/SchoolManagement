@@ -2,6 +2,7 @@ package com.schoolmanagement.schoolbackend.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
@@ -15,4 +16,13 @@ public class WebConfig implements WebMvcConfigurer {
 				.allowedHeaders("*") // Allow all headers
 				.allowCredentials(true);
 	}
+	
+	@Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // Map URL "/photos/**" to the file system folder "uploads/student-photos/"
+        registry.addResourceHandler("/photos/**")
+                .addResourceLocations("file:uploads/student-photos/");
+    }
+	
 }
+//file:///D:/stswoksplace/SchoolManagement/uploads/student-photos/

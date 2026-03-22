@@ -3,7 +3,11 @@ package com.schoolmanagement.schoolbackend.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.time.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Data
@@ -27,60 +31,69 @@ public class Student {
     @Column(unique = true, nullable = false)
     private String admissionNumber;
 
-    private String grade;
+//    private String grade;
     
     private String contactPhone;
+    
+    private String fatherName;
+    
+    
+    private String nationality;
+    
+    private String aadharNumber;
+    
+    private String email;
+    
+    private String motherName;
+    
+    private String fatherOccupation;
+    
+    private String motherOccupation;
+    
+    private String primaryMobile;
+    
+    private String secondaryMobile;
+    
+    private String currentAddres;
+    
+    private String city;
+    
+    private String state;
+    
+    private String pincode;
+    
+    private Boolean isAddressSame;
+    
+    private String permanentAddress;
+    
+    private String prevSchoolName;
+    
+    private String lastClassPassed;
+    
+    private String prevGrade;
+    
+    private String tcNumber;
+    
+    
+ // --- NEW LINKS TO MASTERS ---
 
-	public String getFirstName() {
-		return firstName;
-	}
-
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
-	}
-
-	public String getLastName() {
-		return lastName;
-	}
-
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
-
-	public LocalDate getDateOfBirth() {
-		return dateOfBirth;
-	}
-
-	public void setDateOfBirth(LocalDate dateOfBirth) {
-		this.dateOfBirth = dateOfBirth;
-	}
-
-	public String getAdmissionNumber() {
-		return admissionNumber;
-	}
-
-	public void setAdmissionNumber(String admissionNumber) {
-		this.admissionNumber = admissionNumber;
-	}
-
-	public String getGrade() {
-		return grade;
-	}
-
-	public void setGrade(String grade) {
-		this.grade = grade;
-	}
-
-	public String getContactPhone() {
-		return contactPhone;
-	}
-
-	public void setContactPhone(String contactPhone) {
-		this.contactPhone = contactPhone;
-	}
-
-	public Long getId() {
-		return id;
-	}
+    // Link to Standard (Class) - Many Students can be in One Standard
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JsonIgnoreProperties("student") // YEH ZAROORI HAI: Taaki loop na bane
+    private List<StudentEnrollment> enrollments = new ArrayList<>();
+    
+    @Column(name = "profile_photo_path")
+    private String profilePhoto;
+    
+    
+ // --- MULTI-TENANT LINK ---
+    @ManyToOne
+    @JoinColumn(name = "school_profile_id")
+    private SchoolProfile schoolProfile;
+    
+    
+    
+    
+  
     
 }

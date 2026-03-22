@@ -59,6 +59,11 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						// Allow public access to registration and login endpoints
 						.requestMatchers("/api/auth/**").permitAll().requestMatchers("/error").permitAll()
+						.requestMatchers("/api/attendance/**").permitAll()
+						.requestMatchers("/api/master/**").permitAll()
+						.requestMatchers("/api/students/**").permitAll()
+						//Give access to get from folder photo 
+						.requestMatchers("/photos/**").permitAll()
 						// Secure all other endpoints
 						.anyRequest().authenticated());
 

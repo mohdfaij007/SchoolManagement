@@ -15,16 +15,5 @@ public class Section {
     @Column(nullable = false)
     private String sectionName; // Example: "A", "B", "Rose", "Lotus"
 
-	public String getSectionName() {
-		return sectionName;
-	}
-
-	public void setSectionName(String sectionName) {
-		this.sectionName = sectionName;
-	}
-
-	public Long getId() {
-		return id;
-	}
     
 }
