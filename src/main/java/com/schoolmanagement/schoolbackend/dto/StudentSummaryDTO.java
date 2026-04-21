@@ -9,4 +9,5 @@ public class StudentSummaryDTO {
     private String admissionNo;
     private String fullName;
     private String fatherName;
+    
 }

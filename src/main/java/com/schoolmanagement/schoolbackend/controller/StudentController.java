@@ -1,6 +1,8 @@
 package com.schoolmanagement.schoolbackend.controller;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,8 +14,9 @@ import org.springframework.web.multipart.MultipartFile;
 import com.schoolmanagement.schoolbackend.dto.StudentSummaryDTO;
 import com.schoolmanagement.schoolbackend.model.Student;
 import com.schoolmanagement.schoolbackend.payload.request.StudentPayloadDTO;
-import com.schoolmanagement.schoolbackend.service.FileStorageService;
+import com.schoolmanagement.schoolbackend.repository.StudentRepository;
 import com.schoolmanagement.schoolbackend.service.StudentService;
+import com.schoolmanagement.schoolbackend.service.impl.FileStorageService;
 
 @RestController
 @RequestMapping("/api/students")
@@ -24,6 +27,10 @@ public class StudentController {
     
     @Autowired
     private FileStorageService fileStorageService;
+    
+ // Added to save the entity directly and avoid the DTO null-overwrite bug
+    @Autowired
+    private StudentRepository studentRepository;
 
     // POST: Create a Student (UPDATED TO USE DTO)
     @PostMapping
@@ -51,19 +58,34 @@ public class StudentController {
         return new ResponseEntity<>(studentService.updateStudent(id, payload), HttpStatus.OK);
     }
     
+ // UPDATE PHOTO (FIXED: Cloudinary integration + Data Corruption Bug Resolved)
     @PostMapping("/{id}/photo")
-    public ResponseEntity<String> uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
-        String filename = fileStorageService.saveFile(file);
-        
-        Student student = studentService.getStudentById(id);
-        student.setProfilePhoto(filename);
-        
-        // Save the direct entity update for photo
-        studentService.updateStudent(id, new StudentPayloadDTO()); // Note: Isko directly repo.save(student) se bhi kar sakte hain photo ke case me
-        
-        return ResponseEntity.ok("Photo uploaded successfully: " + filename);
-    }
+    public ResponseEntity<?> uploadPhoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        try {
+            // 1. Upload to Cloudinary using the new method in FileStorageService
+            String photoUrl = fileStorageService.uploadImage(file);
 
+            // 2. Fetch the existing student
+            Student student = studentService.getStudentById(id);
+
+            // 3. Update ONLY the profile photo URL field
+            student.setProfilePhoto(photoUrl);
+
+            // 4. Save directly via repository. 
+            // This prevents the empty StudentPayloadDTO from overwriting other fields with nulls.
+            studentRepository.save(student);
+
+            // 5. Return a JSON object so Angular can easily extract the URL
+            return ResponseEntity.ok(Map.of(
+                "message", "Photo uploaded successfully",
+                "url", photoUrl
+            ));
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to upload image to cloud storage."));
+        }
+    }
     // DELETE: Delete a Student
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable Long id) {
