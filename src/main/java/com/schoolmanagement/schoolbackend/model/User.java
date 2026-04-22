@@ -46,4 +46,7 @@ public class User {
     // We can use a simple String role for now
     private String role; // e.g., "ADMIN", "TEACHER", "STUDENT"
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "school_profile_id")
+    private SchoolProfile schoolProfile;
 }

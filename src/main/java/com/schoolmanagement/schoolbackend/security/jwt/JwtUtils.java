@@ -1,7 +1,8 @@
-package com.schoolmanagement.schoolbackend.security.jwt; // Adjust package if needed
+package com.schoolmanagement.schoolbackend.security.jwt; 
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -12,10 +13,13 @@ import java.util.Date;
 @Component
 public class JwtUtils {
 
-    // In a real app, store this in application.properties!
-    // It must be at least 256 bits (32 characters) long.
-    private final String jwtSecret = "MySuperSecretKeyForSchoolManagementSystem123!"; 
-    private final int jwtExpirationMs = 86400000; // 24 hours (in milliseconds)
+    // Pulls the secret from application.properties or Environment Variables
+    @Value("${app.jwt.secret}")
+    private String jwtSecret; 
+    
+    // Pulls expiration time (defaults to 24 hours if not set)
+    @Value("${app.jwt.expirationMs:86400000}")
+    private int jwtExpirationMs; 
 
     private Key key() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());

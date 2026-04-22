@@ -150,9 +150,22 @@ public class StudentService {
     public List<StudentSummaryDTO> getStudentsByClass(Long standardId, Long sectionId, Long sessionId) {
         
         // Ab data Enrollment table se aayega!
-        List<StudentEnrollment> enrollments = studentEnrollmentRepository
-            .findByStandardIdAndSectionIdAndAcademicSessionIdAndIsCurrentActiveTrue(standardId, sectionId, sessionId);
+        List<StudentEnrollment> enrollments;
         
+     // If the teacher selected a specific section (e.g., 5-A)
+        if (sectionId != null) {
+            enrollments = studentEnrollmentRepository
+                .findByStandardIdAndSectionIdAndAcademicSessionIdAndIsCurrentActiveTrue(standardId, sectionId, sessionId);
+        } 
+        // If the teacher ONLY selected the class (e.g., all of Class 5)
+        else {
+            enrollments = studentEnrollmentRepository
+                .findByStandardIdAndAcademicSessionIdAndIsCurrentActiveTrue(standardId, sessionId);
+        }
+        
+//        = studentEnrollmentRepository
+//            .findByStandardIdAndSectionIdAndAcademicSessionIdAndIsCurrentActiveTrue(standardId, sectionId, sessionId);
+//        
         return enrollments.stream().map(enrollment -> {
             Student student = enrollment.getStudent();
             StudentSummaryDTO dto = new StudentSummaryDTO();

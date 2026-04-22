@@ -24,5 +24,8 @@ public interface StudentEnrollmentRepository extends JpaRepository<StudentEnroll
 
     // Ek poori Class (bina section filter) ke active students nikalne ke liye
     List<StudentEnrollment> findByStandardIdAndIsCurrentActiveTrue(Long standardId);
+    
+    List<StudentEnrollment> findByStandardIdAndAcademicSessionIdAndIsCurrentActiveTrue(
+            Long standardId, Long sessionId);
     	    
 }

@@ -34,5 +34,9 @@ public interface FeeTransactionRepository extends JpaRepository<FeeTransaction, 
            "WHERE t.academicSessionId = :sessionId " +
            "GROUP BY d.feeHeadName")
     List<HeadWiseReportDTO> getHeadWiseCollection(Long sessionId);
+    
+    
+    // 5.  this allow Spring Data JPA to fetch data for multiple students at once using an SQL IN (...) clause.
+    List<FeeTransaction> findByStudentIdIn(List<Long> studentIds);
 
 }

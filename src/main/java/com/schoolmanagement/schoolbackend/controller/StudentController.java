@@ -11,10 +11,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.schoolmanagement.schoolbackend.dto.BulkPromotionRequestDTO;
 import com.schoolmanagement.schoolbackend.dto.StudentSummaryDTO;
 import com.schoolmanagement.schoolbackend.model.Student;
 import com.schoolmanagement.schoolbackend.payload.request.StudentPayloadDTO;
 import com.schoolmanagement.schoolbackend.repository.StudentRepository;
+import com.schoolmanagement.schoolbackend.service.StudentPromotionService;
 import com.schoolmanagement.schoolbackend.service.StudentService;
 import com.schoolmanagement.schoolbackend.service.impl.FileStorageService;
 
@@ -31,6 +33,9 @@ public class StudentController {
  // Added to save the entity directly and avoid the DTO null-overwrite bug
     @Autowired
     private StudentRepository studentRepository;
+    
+    @Autowired
+    private StudentPromotionService studentPromotionService;
 
     // POST: Create a Student (UPDATED TO USE DTO)
     @PostMapping
@@ -108,9 +113,22 @@ public class StudentController {
     @GetMapping("/by-class")
     public ResponseEntity<List<StudentSummaryDTO>> getStudentsByClass(
             @RequestParam Long classId,
-            @RequestParam Long sectionId,
+            @RequestParam(required = false) Long sectionId,
             @RequestParam Long sessionId) {
         
         return ResponseEntity.ok(studentService.getStudentsByClass(classId, sectionId, sessionId));
+    }
+    
+    
+    
+ // --- ENDPOINT FOR YEAR-END PROMOTION ---
+    @PostMapping("/promote")
+    public ResponseEntity<?> promoteStudents(@RequestBody BulkPromotionRequestDTO requestDTO) {
+        try {
+            String result = studentPromotionService.processBulkPromotion(requestDTO);
+            return ResponseEntity.ok(Map.of("message", result));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

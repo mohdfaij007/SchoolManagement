@@ -1,7 +1,9 @@
 package com.schoolmanagement.schoolbackend.controller;
 
+import com.schoolmanagement.schoolbackend.model.SchoolProfile;
 import com.schoolmanagement.schoolbackend.model.User;
 import com.schoolmanagement.schoolbackend.payload.request.RegisterRequest;
+import com.schoolmanagement.schoolbackend.repository.SchoolProfileRepository;
 import com.schoolmanagement.schoolbackend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.schoolmanagement.schoolbackend.payload.request.LoginRequest;
 import com.schoolmanagement.schoolbackend.payload.response.JwtResponse;
+import com.schoolmanagement.schoolbackend.security.UserDetailsImpl;
 import com.schoolmanagement.schoolbackend.security.jwt.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -29,6 +32,9 @@ public class AuthController {
     
     @Autowired
     private AuthenticationManager authenticationManager;
+    
+    @Autowired
+    private SchoolProfileRepository schoolProfileRepository;
 
     @Autowired
     private JwtUtils jwtUtils;
@@ -45,17 +51,22 @@ public class AuthController {
         user.setUsername(registerRequest.getUsername());
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword())); // HASH THE PASSWORD!
         user.setRole(registerRequest.getRole() != null ? registerRequest.getRole() : "STUDENT"); // Default role
-
+     // We fetch School ID 1. If it doesn't exist yet, it stays null safely.
+        SchoolProfile defaultSchool = schoolProfileRepository.findById(1L).orElse(null);
+        user.setSchoolProfile(defaultSchool);
+        
         userRepository.save(user);
 
         return new ResponseEntity<>("User registered successfully!", HttpStatus.CREATED);
     }
     
     
+ // Keep your existing imports and registerUser method the same...
+
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         
-        // 1. Authenticate the user (Spring Security handles checking password matches)
+        // 1. Authenticate the user 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
@@ -65,12 +76,10 @@ public class AuthController {
         // 3. Generate JWT Token
         String jwt = jwtUtils.generateJwtToken(authentication);
 
-        // 4. Get User Details (to send back role/username)
-        // Note: Casting to UserDetails is safe because authentication succeeded
-        org.springframework.security.core.userdetails.UserDetails userDetails = 
-            (org.springframework.security.core.userdetails.UserDetails) authentication.getPrincipal();
+        // 4. Get User Details (Cast to our custom UserDetailsImpl so we can access getRole())
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
-        // 5. Return Response
-        return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getUsername(), "STUDENT")); // Hardcoded role for now
+        // 5. Return Response WITH THE REAL ROLE
+        return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getUsername(), userDetails.getRole(), userDetails.getSchoolId())); 
     }
 }

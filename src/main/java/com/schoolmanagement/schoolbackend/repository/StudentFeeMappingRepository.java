@@ -21,5 +21,8 @@ public interface StudentFeeMappingRepository extends JpaRepository<StudentFeeMap
     
     // 4. Delete specific mapping
     void deleteByStudentIdAndFeeStructureId(Long studentId, Long feeStructureId);
+    
+ // 5.  this allow Spring Data JPA to fetch data for multiple students at once using an SQL IN (...) clause.
+    List<StudentFeeMapping> findByStudentIdIn(List<Long> studentIds);
 
 }

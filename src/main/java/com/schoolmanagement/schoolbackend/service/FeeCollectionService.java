@@ -3,7 +3,6 @@ package com.schoolmanagement.schoolbackend.service;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
 
 import com.schoolmanagement.schoolbackend.dto.DailyCollectionReportDTO;
 import com.schoolmanagement.schoolbackend.dto.DefaulterDTO;
@@ -12,7 +11,6 @@ import com.schoolmanagement.schoolbackend.dto.FeeTransactionDTO;
 import com.schoolmanagement.schoolbackend.dto.HeadWiseReportDTO;
 import com.schoolmanagement.schoolbackend.dto.PaymentRequestDTO;
 import com.schoolmanagement.schoolbackend.model.FeeTransaction;
-@Service
 public interface FeeCollectionService {
 	
 	public FeeDueReportDTO getDueReport(Long studentId);

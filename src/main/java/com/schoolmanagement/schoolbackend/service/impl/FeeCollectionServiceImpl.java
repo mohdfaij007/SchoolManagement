@@ -29,39 +29,24 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 	private final StudentFeeMappingRepository mappingRepository;
 	private final FeeTransactionRepository transactionRepository;
 	private final UserRepository userRepository;
-
 	private final StudentEnrollmentRepository studentEnrollmentRepository;
 
 	@Autowired
 	private StudentFeeService studentFeeService;
 
-	// 1. GET DUES (The "Bill")
-	@Override
-	@Transactional
-	public FeeDueReportDTO getDueReport(Long studentId) {
-
-		// 1. Self-Healing (Ghost Fees)
-		Student student = studentRepository.findById(studentId)
-				.orElseThrow(() -> new RuntimeException("Student not found"));
-
-		// NAYA: Student ka current enrollment fetch karo
-		StudentEnrollment enrollment = studentEnrollmentRepository.findByStudentIdAndIsCurrentActiveTrue(studentId);
-		if (enrollment == null) {
-			throw new RuntimeException("No active enrollment found for this student.");
-		}
-
-		studentFeeService.assignMandatoryFees(studentId, enrollment.getStandard().getId(),
-				enrollment.getAcademicSession().getId());
-
-		List<StudentFeeMapping> mappings = mappingRepository.findByStudentId(studentId);
-		List<FeeTransaction> transactions = transactionRepository.findByStudentIdOrderByTransactionDateDesc(studentId);
-
-		// 2. Build Paid Map
+	// =================================================================================
+	// HELPER: CORE MATH LOGIC (Extracted to be reused by both Single and Bulk methods)
+	// =================================================================================
+	private FeeDueReportDTO calculateDues(Student student, StudentEnrollment enrollment, 
+										  List<StudentFeeMapping> mappings, List<FeeTransaction> transactions) {
+		
 		Map<Long, Double> paidMap = new HashMap<>();
-		for (FeeTransaction t : transactions) {
-			for (FeeTransactionDetail d : t.getTransactionDetails()) {
-				Long mapId = d.getStudentFeeMapping().getId();
-				paidMap.put(mapId, paidMap.getOrDefault(mapId, 0.0) + d.getAmountPaid());
+		if (transactions != null) {
+			for (FeeTransaction t : transactions) {
+				for (FeeTransactionDetail d : t.getTransactionDetails()) {
+					Long mapId = d.getStudentFeeMapping().getId();
+					paidMap.put(mapId, paidMap.getOrDefault(mapId, 0.0) + d.getAmountPaid());
+				}
 			}
 		}
 
@@ -75,16 +60,11 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 		double totalFullDue = 0;
 		double totalPaid = 0;
 
-		// Dates
 		LocalDate today = LocalDate.now();
-		// Force "End of Current Month" as the strict cut-off.
-		// If today is Jan 10, we charge for full Jan.
 		LocalDate strictCutOff = today.withDayOfMonth(today.lengthOfMonth());
 
-		// Session Dates
 		LocalDate sessionStart = LocalDate.now().withMonth(4).withDayOfMonth(1);
-		if (today.getMonthValue() < 4)
-			sessionStart = LocalDate.of(today.getYear() - 1, 4, 1);
+		if (today.getMonthValue() < 4) sessionStart = LocalDate.of(today.getYear() - 1, 4, 1);
 		LocalDate sessionEnd = sessionStart.plusYears(1).minusDays(1);
 
 		if (enrollment.getAcademicSession() != null && enrollment.getAcademicSession().getStartDate() != null) {
@@ -92,126 +72,111 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 			sessionEnd = enrollment.getAcademicSession().getEndDate();
 		}
 
-		for (StudentFeeMapping mapping : mappings) {
-			if (!mapping.isActive())
-				continue; // Skip inactive (unless we want to collect past dues)
+		if (mappings != null) {
+			for (StudentFeeMapping mapping : mappings) {
+				if (!mapping.isActive()) continue;
 
-			com.schoolmanagement.schoolbackend.enums.FeeFrequency frequency = mapping.getFeeStructure().getFeeHead()
-					.getFrequency();
-			double rate = mapping.getFeeStructure().getAmount();
+				FeeFrequency frequency = mapping.getFeeStructure().getFeeHead().getFrequency();
+				double rate = mapping.getFeeStructure().getAmount();
 
-			// A. Determine Effective Dates
-			LocalDate start = (mapping.getStartDate() != null) ? mapping.getStartDate() : sessionStart;
-			LocalDate end = (mapping.getEndDate() != null) ? mapping.getEndDate() : sessionEnd;
+				LocalDate start = (mapping.getStartDate() != null) ? mapping.getStartDate() : sessionStart;
+				LocalDate end = (mapping.getEndDate() != null) ? mapping.getEndDate() : sessionEnd;
 
-			// Clamp
-			if (start.isBefore(sessionStart))
-				start = sessionStart;
-			if (end.isAfter(sessionEnd))
-				end = sessionEnd;
+				if (start.isBefore(sessionStart)) start = sessionStart;
+				if (end.isAfter(sessionEnd)) end = sessionEnd;
 
-			// B. Calculate TWO Amounts
-			double sessionTotal = 0; // Total Liability (Apr-Mar)
-			double accruedTotal = 0; // Strict Liability (Apr-Today)
+				double sessionTotal = 0;
+				double accruedTotal = 0;
 
-			switch (frequency) {
-			case MONTHLY:
-				// 1. Full Session
-				long totalMonths = java.time.temporal.ChronoUnit.MONTHS.between(start.withDayOfMonth(1),
-						end.withDayOfMonth(1)) + 1;
-				sessionTotal = rate * totalMonths;
+				switch (frequency) {
+				case MONTHLY:
+					long totalMonths = ChronoUnit.MONTHS.between(start.withDayOfMonth(1), end.withDayOfMonth(1)) + 1;
+					sessionTotal = rate * totalMonths;
 
-				// 2. Strict (Till Today)
-				LocalDate strictEnd = end.isBefore(strictCutOff) ? end : strictCutOff;
-				if (!strictEnd.isBefore(start)) {
-					long accruedMonths = java.time.temporal.ChronoUnit.MONTHS.between(start.withDayOfMonth(1),
-							strictEnd.withDayOfMonth(1)) + 1;
-					accruedTotal = rate * accruedMonths;
+					LocalDate strictEnd = end.isBefore(strictCutOff) ? end : strictCutOff;
+					if (!strictEnd.isBefore(start)) {
+						long accruedMonths = ChronoUnit.MONTHS.between(start.withDayOfMonth(1), strictEnd.withDayOfMonth(1)) + 1;
+						accruedTotal = rate * accruedMonths;
+					}
+					break;
+				case QUARTERLY:
+					sessionTotal = rate * 4;
+					accruedTotal = sessionTotal;
+					break;
+				default:
+					sessionTotal = rate;
+					accruedTotal = rate;
+					break;
 				}
-				break;
 
-			case QUARTERLY:
-				// Similar logic for Quarters...
-				// For simplicity, treating Quarterly same as Annual for strictness or calculate
-				// quarters passed.
-				// Let's assume Annual/OneTime are due immediately.
-				sessionTotal = rate * 4; // Approx
-				accruedTotal = sessionTotal; // Usually due in advance
-				break;
+				double paid = paidMap.getOrDefault(mapping.getId(), 0.0);
+				totalPaid += paid;
 
-			default: // ANNUALLY / ONE_TIME
-				sessionTotal = rate;
-				accruedTotal = rate; // Always due immediately
-				break;
-			}
+				double strictDue = Math.max(0, accruedTotal - paid);
+				double fullDue = Math.max(0, sessionTotal - paid);
 
-			double paid = paidMap.getOrDefault(mapping.getId(), 0.0);
-			totalPaid += paid;
+				if (fullDue > 0) {
+					FeeHeadDueDTO headDue = new FeeHeadDueDTO();
+					headDue.setMappingId(mapping.getId());
+					headDue.setFeeHeadName(mapping.getFeeStructure().getFeeHead().getHeadName());
+					headDue.setTotalSessionAmount(sessionTotal);
+					headDue.setAmountAccruedTillDate(accruedTotal);
+					headDue.setPaidAmount(paid);
+					headDue.setDueAmountStrict(strictDue);
+					headDue.setDueAmountFull(fullDue);
 
-			// C. Calculate Dues
-			double strictDue = Math.max(0, accruedTotal - paid);
-			double fullDue = Math.max(0, sessionTotal - paid);
+					String paidUpto = "None";
+					if (frequency == FeeFrequency.MONTHLY && paid > 0) {
+						int covered = (int) (paid / rate);
+						if (covered > 0) paidUpto = start.plusMonths(covered - 1).getMonth().toString();
+					}
+					headDue.setPaidUptoMonth(paidUpto);
 
-			// Add to list if there is ANY due (Strict OR Future)
-			if (fullDue > 0) {
-				FeeHeadDueDTO headDue = new FeeHeadDueDTO();
-				headDue.setMappingId(mapping.getId());
-				headDue.setFeeHeadName(mapping.getFeeStructure().getFeeHead().getHeadName());
-
-				headDue.setTotalSessionAmount(sessionTotal);
-				headDue.setAmountAccruedTillDate(accruedTotal);
-				headDue.setPaidAmount(paid);
-
-				headDue.setDueAmountStrict(strictDue); // 👈 Default this in Frontend Input
-				headDue.setDueAmountFull(fullDue); // 👈 Show this as "Total Remaining"
-
-				// Paid Upto Logic
-				String paidUpto = "None";
-				if (frequency == com.schoolmanagement.schoolbackend.enums.FeeFrequency.MONTHLY && paid > 0) {
-					int covered = (int) (paid / rate);
-					if (covered > 0)
-						paidUpto = start.plusMonths(covered - 1).getMonth().toString();
+					dueList.add(headDue);
+					totalStrictDue += strictDue;
+					totalFullDue += fullDue;
 				}
-				headDue.setPaidUptoMonth(paidUpto);
-
-				dueList.add(headDue);
-
-				totalStrictDue += strictDue;
-				totalFullDue += fullDue;
 			}
 		}
 
 		report.setDues(dueList);
-		// We now have two totals. You can decide which one to put in the main report
-		// fields.
-		// Usually, 'NetDueAmount' is the Strict Due.
-		report.setTotalFeeAmount(totalStrictDue); // "Current Due"
+		report.setTotalFeeAmount(totalStrictDue);
 		report.setTotalPaidAmount(totalPaid);
 		report.setNetDueAmount(totalStrictDue);
-
-		// Optional: Add a new field to FeeDueReportDTO for 'totalFutureLiability' if
-		// needed
-		// report.setTotalFutureLiability(totalFullDue);
 
 		return report;
 	}
 
+	// =================================================================================
+	// 1. GET DUES (Single Student)
+	// =================================================================================
+	@Override
+	@Transactional
+	public FeeDueReportDTO getDueReport(Long studentId) {
+		Student student = studentRepository.findById(studentId)
+				.orElseThrow(() -> new RuntimeException("Student not found"));
+
+		StudentEnrollment enrollment = studentEnrollmentRepository.findByStudentIdAndIsCurrentActiveTrue(studentId);
+		if (enrollment == null) throw new RuntimeException("No active enrollment found for this student.");
+
+		studentFeeService.assignMandatoryFees(studentId, enrollment.getStandard().getId(), enrollment.getAcademicSession().getId());
+
+		List<StudentFeeMapping> mappings = mappingRepository.findByStudentId(studentId);
+		List<FeeTransaction> transactions = transactionRepository.findByStudentIdOrderByTransactionDateDesc(studentId);
+
+		return calculateDues(student, enrollment, mappings, transactions);
+	}
+
+	// =================================================================================
 	// 2. COLLECT PAYMENT
+	// =================================================================================
 	@Override
 	@Transactional
 	public FeeTransaction collectFees(PaymentRequestDTO request, Long collectedByUserId) {
-
-		// 1. Get the Report (Contains both Strict & Full Dues)
 		FeeDueReportDTO dueStatus = getDueReport(request.getStudentId());
 
-		// 👇 CHANGE 1: Calculate the Maximum Possible Payment (Full Year)
-		// We cannot rely on dueStatus.getNetDueAmount() because that now shows only
-		// "Strict Due".
-		double maxPayableAmount = dueStatus.getDues().stream().mapToDouble(d -> d.getDueAmountFull()) // Sum of all
-																										// Future Dues
-				.sum();
+		double maxPayableAmount = dueStatus.getDues().stream().mapToDouble(d -> d.getDueAmountFull()).sum();
 
-		// Allow a small buffer for floating point errors (optional, but good practice)
 		if (request.getAmount() > maxPayableAmount + 1.0) {
 			throw new RuntimeException("Overpayment not allowed! Max Payable for Session: " + maxPayableAmount);
 		}
@@ -221,45 +186,28 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 		transaction.setTotalAmount(request.getAmount());
 		transaction.setPaymentMode(request.getPaymentMode());
 		transaction.setRemarks(request.getRemarks());
-
 		transaction.setTransactionDate(LocalDateTime.now());
 
-		Student student = studentRepository.findById(request.getStudentId())
-				.orElseThrow(() -> new RuntimeException("Student not found"));
+		StudentEnrollment enrollment = studentEnrollmentRepository.findByStudentIdAndIsCurrentActiveTrue(request.getStudentId());
+		transaction.setClassId(enrollment.getStandard().getId()); 
+		transaction.setAcademicSessionId(enrollment.getAcademicSession().getId());
 
-		StudentEnrollment enrollment = studentEnrollmentRepository
-				.findByStudentIdAndIsCurrentActiveTrue(request.getStudentId());
-		transaction.setClassId(enrollment.getStandard().getId()); // UPDATED
-		transaction.setAcademicSessionId(enrollment.getAcademicSession().getId()); // UPDATED
-
-		User staff = userRepository.findById(collectedByUserId)
-				.orElseThrow(() -> new RuntimeException("Staff User not found"));
+		User staff = userRepository.findById(collectedByUserId).orElseThrow(() -> new RuntimeException("Staff User not found"));
 		transaction.setCollectedBy(staff);
 
-		// Auto-Allocation Logic
 		double remainingMoney = request.getAmount();
 
 		for (FeeHeadDueDTO dueHead : dueStatus.getDues()) {
-			if (remainingMoney <= 0)
-				break;
+			if (remainingMoney <= 0) break;
 
-			// 👇 CHANGE 2: Allocate based on FULL Due, not Strict Due
-			// If we used 'getDueAmountStrict', the system would reject money meant for
-			// Feb/March.
-			// Using 'getDueAmountFull' allows filling the bucket for the whole year.
 			double amountToPayForThisHead = Math.min(remainingMoney, dueHead.getDueAmountFull());
 
 			if (amountToPayForThisHead > 0) {
 				FeeTransactionDetail detail = new FeeTransactionDetail();
-				// Handle "Ghost Fees" (mappingId -1) if necessary, or assume self-healing fixed
-				// it.
-				// Since we added Self-Healing to getDueReport, mappingId should be valid here.
 				detail.setStudentFeeMapping(mappingRepository.getReferenceById(dueHead.getMappingId()));
 				detail.setAmountPaid(amountToPayForThisHead);
 				detail.setFeeHeadName(dueHead.getFeeHeadName());
-
 				transaction.addDetail(detail);
-
 				remainingMoney -= amountToPayForThisHead;
 			}
 		}
@@ -267,11 +215,12 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 		return transactionRepository.save(transaction);
 	}
 
+	// =================================================================================
 	// 3. TRANSACTION HISTORY
+	// =================================================================================
 	@Override
 	public List<FeeTransactionDTO> getTransactionHistory(Long studentId) {
 		List<FeeTransaction> transactions = transactionRepository.findByStudentIdOrderByTransactionDateDesc(studentId);
-
 		return transactions.stream().map(t -> {
 			FeeTransactionDTO dto = new FeeTransactionDTO();
 			dto.setTransactionId(t.getId());
@@ -280,7 +229,6 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 			dto.setTransactionDate(t.getTransactionDate());
 			dto.setRemarks(t.getRemarks());
 
-			// Map breakdown
 			List<FeeTransactionDTO.TransactionDetailItem> details = t.getTransactionDetails().stream().map(d -> {
 				FeeTransactionDTO.TransactionDetailItem item = new FeeTransactionDTO.TransactionDetailItem();
 				item.setFeeHeadName(d.getFeeHeadName());
@@ -293,26 +241,46 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 		}).collect(Collectors.toList());
 	}
 
-	// 4. DEFAULTERS LIST
+	// =================================================================================
+	// 4. DEFAULTERS LIST (OPTIMIZED - NO MORE N+1 BUGS!)
+	// =================================================================================
 	@Override
 	public List<DefaulterDTO> getDefaultersByClass(Long classId, Long sectionId) {
 
 		List<StudentEnrollment> enrollments;
-
-		// --- FIX: Ab hum null session pass karne ki jagah naye methods call kar rahe
-		// hain ---
 		if (sectionId != null) {
-			enrollments = studentEnrollmentRepository.findByStandardIdAndSectionIdAndIsCurrentActiveTrue(classId,
-					sectionId);
+			enrollments = studentEnrollmentRepository.findByStandardIdAndSectionIdAndIsCurrentActiveTrue(classId, sectionId);
 		} else {
 			enrollments = studentEnrollmentRepository.findByStandardIdAndIsCurrentActiveTrue(classId);
 		}
 
 		List<DefaulterDTO> defaulters = new ArrayList<>();
+		if (enrollments.isEmpty()) return defaulters;
 
+		// 1. Extract IDs
+		List<Long> studentIds = enrollments.stream().map(e -> e.getStudent().getId()).collect(Collectors.toList());
+
+		// 2. BATCH FETCHING (Only 2 queries sent to DB!)
+		List<StudentFeeMapping> allMappings = mappingRepository.findByStudentIdIn(studentIds);
+		List<FeeTransaction> allTransactions = transactionRepository.findByStudentIdIn(studentIds);
+
+		// 3. Group by Student in Java Memory
+		// Note: If StudentFeeMapping doesn't have a getStudent() method, change m.getStudent().getId() to m.getStudentId()
+		Map<Long, List<StudentFeeMapping>> mappingsByStudent = allMappings.stream()
+				.collect(Collectors.groupingBy(m -> m.getStudent().getId()));
+		
+		Map<Long, List<FeeTransaction>> transactionsByStudent = allTransactions.stream()
+				.collect(Collectors.groupingBy(FeeTransaction::getStudentId));
+
+		// 4. Process locally
 		for (StudentEnrollment enrollment : enrollments) {
 			Student student = enrollment.getStudent();
-			FeeDueReportDTO dueReport = getDueReport(student.getId());
+			
+			List<StudentFeeMapping> studentMappings = mappingsByStudent.getOrDefault(student.getId(), new ArrayList<>());
+			List<FeeTransaction> studentTransactions = transactionsByStudent.getOrDefault(student.getId(), new ArrayList<>());
+
+			// Use our helper instead of triggering DB queries!
+			FeeDueReportDTO dueReport = calculateDues(student, enrollment, studentMappings, studentTransactions);
 
 			if (dueReport.getNetDueAmount() > 0) {
 				DefaulterDTO dto = new DefaulterDTO();
@@ -328,11 +296,12 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 		}
 
 		defaulters.sort((a, b) -> b.getTotalDueAmount().compareTo(a.getTotalDueAmount()));
-
 		return defaulters;
 	}
 
+	// =================================================================================
 	// 5. DAILY REPORT
+	// =================================================================================
 	@Override
 	public DailyCollectionReportDTO getDailyCollection(LocalDate date) {
 		LocalDateTime startOfDay = date.atStartOfDay();
@@ -340,19 +309,12 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 
 		List<FeeTransaction> transactions = transactionRepository.findByTransactionDateBetween(startOfDay, endOfDay);
 
-		// Optimization: Calculate totals in a single pass if preferred, but Streams are
-		// readable
-		double totalCash = 0;
-		double totalOnline = 0;
-		double totalCheque = 0;
+		double totalCash = 0, totalOnline = 0, totalCheque = 0;
 
 		for (FeeTransaction t : transactions) {
-			if (t.getPaymentMode() == PaymentMode.CASH)
-				totalCash += t.getTotalAmount();
-			else if (t.getPaymentMode() == PaymentMode.ONLINE)
-				totalOnline += t.getTotalAmount();
-			else
-				totalCheque += t.getTotalAmount();
+			if (t.getPaymentMode() == PaymentMode.CASH) totalCash += t.getTotalAmount();
+			else if (t.getPaymentMode() == PaymentMode.ONLINE) totalOnline += t.getTotalAmount();
+			else totalCheque += t.getTotalAmount();
 		}
 
 		DailyCollectionReportDTO report = new DailyCollectionReportDTO();
@@ -373,7 +335,6 @@ public class FeeCollectionServiceImpl implements FeeCollectionService {
 		}).collect(Collectors.toList());
 
 		report.setTransactions(dtoList);
-
 		return report;
 	}
 

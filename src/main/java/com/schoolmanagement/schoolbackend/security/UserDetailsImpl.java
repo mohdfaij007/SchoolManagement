@@ -3,10 +3,12 @@ package com.schoolmanagement.schoolbackend.security;
 import com.schoolmanagement.schoolbackend.model.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 public class UserDetailsImpl implements UserDetails {
@@ -14,32 +16,47 @@ public class UserDetailsImpl implements UserDetails {
 
     private Long id;
     private String username;
+    private String role; // Added role field
+    private Long schoolId;
 
     @JsonIgnore
     private String password;
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(Long id, String username, String password,
+    public UserDetailsImpl(Long id, String username, String password, String role, Long schoolId,
                            Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.password = password;
+        this.role = role;
+        this.schoolId = schoolId;
         this.authorities = authorities;
     }
 
     public static UserDetailsImpl build(User user) {
-        // We use an empty list for authorities for now. 
-        // If you add Roles later, you map them here.
+        // Map the user's actual role to Spring Security's GrantedAuthority
+        List<GrantedAuthority> authorities = Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_" + user.getRole())
+        );
+        
+        Long sId = (user.getSchoolProfile() != null) ? user.getSchoolProfile().getId() : null;
+        
         return new UserDetailsImpl(
                 user.getId(),
                 user.getUsername(),
                 user.getPassword(),
-                Collections.emptyList());
+                user.getRole(), // Pass the role from the database
+                sId,
+                authorities);
     }
 
     public Long getId() {
         return id;
+    }
+
+    public String getRole() {
+        return role;
     }
 
     @Override
@@ -57,6 +74,8 @@ public class UserDetailsImpl implements UserDetails {
         return username;
     }
 
+    public Long getSchoolId() { return schoolId; }
+    
     @Override
     public boolean isAccountNonExpired() { return true; }
 
