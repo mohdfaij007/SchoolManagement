@@ -28,4 +28,7 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
 			LocalDate today);
 
 	List<Attendance> findByStudentIdAndAcademicSessionId(Long studentId, Long sessionId);
+	
+	long countByDate(java.time.LocalDate date);
+	long countByDateAndStatusIn(java.time.LocalDate date, java.util.List<com.schoolmanagement.schoolbackend.model.AttendanceStatus> statuses);
 }

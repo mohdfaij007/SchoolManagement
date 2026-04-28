@@ -38,5 +38,8 @@ public interface FeeTransactionRepository extends JpaRepository<FeeTransaction, 
     
     // 5.  this allow Spring Data JPA to fetch data for multiple students at once using an SQL IN (...) clause.
     List<FeeTransaction> findByStudentIdIn(List<Long> studentIds);
+    
+    
+    List<com.schoolmanagement.schoolbackend.model.FeeTransaction> findTop5ByOrderByTransactionDateDesc();
 
 }

@@ -27,5 +27,7 @@ public interface StudentEnrollmentRepository extends JpaRepository<StudentEnroll
     
     List<StudentEnrollment> findByStandardIdAndAcademicSessionIdAndIsCurrentActiveTrue(
             Long standardId, Long sessionId);
+    
+    long countByIsCurrentActiveTrue();
     	    
 }
