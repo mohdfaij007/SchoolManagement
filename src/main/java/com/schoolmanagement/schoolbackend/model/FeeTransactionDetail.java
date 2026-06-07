@@ -2,11 +2,13 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "fee_transaction_details")
-public class FeeTransactionDetail {
+public class FeeTransactionDetail extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

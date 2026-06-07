@@ -2,18 +2,24 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.time.LocalDate;
 
 @Entity
 @Data
-@Table(name = "academic_sessions")
-public class AcademicSession {
+@EqualsAndHashCode(callSuper = true)
+@Table(name = "academic_sessions", uniqueConstraints = {
+	    // Ab session Name sirf ek particular school ke andar unique rahega
+	    @UniqueConstraint(columnNames = {"gradeName", "school_profile_id"})
+	})
+public class AcademicSession extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String sessionName; // Example: "2025-2026"
 
     private LocalDate startDate; // Example: 2025-04-01

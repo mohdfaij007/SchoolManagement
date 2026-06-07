@@ -2,11 +2,13 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Table(name = "school_configuration")
 @Data
-public class SchoolConfiguration {
+@EqualsAndHashCode(callSuper = true)
+public class SchoolConfiguration extends Auditable<String>{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

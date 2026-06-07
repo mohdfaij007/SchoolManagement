@@ -2,14 +2,16 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "fee_structures", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"class_id", "fee_head_id", "academic_session_id"}) 
     // ^ Prevents duplicate fees for the same head in the same class & session
 })
-public class FeeStructure {
+public class FeeStructure extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -2,16 +2,19 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "exam_subject_mappings", uniqueConstraints = {
     // Ek class mein ek exam ke andar ek subject do baar assign nahi ho sakta
     @UniqueConstraint(columnNames = {"exam_id", "standard_id", "subject_id"})
 })
-public class ExamSubjectMapping {
+public class ExamSubjectMapping extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.schoolmanagement.schoolbackend.dto.StudentSummaryDTO;
+import com.schoolmanagement.schoolbackend.enums.Gender;
 import com.schoolmanagement.schoolbackend.model.Student;
 import com.schoolmanagement.schoolbackend.model.StudentEnrollment;
 import com.schoolmanagement.schoolbackend.payload.request.StudentPayloadDTO;
@@ -60,6 +61,22 @@ public class StudentService {
         student.setFatherName(payload.getFatherName());
         student.setMotherName(payload.getMotherName());
         student.setEmail(payload.getEmail());
+        student.setAadharNumber(payload.getAadharNumber());
+        student.setFatherOccupation(payload.getFatherOccupation());
+        student.setMotherOccupation(payload.getMotherOccupation());
+        student.setPrimaryMobile(payload.getPrimaryMobile());
+        student.setSecondaryMobile(payload.getSecondaryMobile());
+        student.setCurrentAddres(payload.getCurrentAddres());
+        student.setCity(payload.getCity());
+        student.setPincode(payload.getPincode());
+        student.setIsAddressSame(payload.getIsAddressSame());
+        student.setPermanentAddress(payload.getPermanentAddress());
+        student.setPrevSchoolName(payload.getPrevSchoolName());
+        student.setPrevGrade(payload.getPrevGrade());
+        student.setTcNumber(payload.getTcNumber());
+        student.setGender(Gender.valueOf(payload.getGender().toUpperCase()));
+        
+        
         
         // School Profile Set Karein
         if (payload.getSchoolProfileId() != null) {

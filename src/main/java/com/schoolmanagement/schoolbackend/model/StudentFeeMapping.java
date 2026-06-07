@@ -2,13 +2,16 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.time.LocalDate;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "student_fee_mappings", 
        uniqueConstraints = @UniqueConstraint(columnNames = {"student_id", "fee_structure_id"}))
-public class StudentFeeMapping {
+public class StudentFeeMapping extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -3,17 +3,20 @@ package com.schoolmanagement.schoolbackend.model;
 import com.schoolmanagement.schoolbackend.enums.PaymentMode;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "fee_transactions", indexes = {
     @Index(name = "idx_transaction_student", columnList = "student_id"),
     @Index(name = "idx_transaction_date", columnList = "transaction_date")
 })
-public class FeeTransaction {
+public class FeeTransaction extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

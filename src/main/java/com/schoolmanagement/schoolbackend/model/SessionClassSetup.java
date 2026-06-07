@@ -2,13 +2,15 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "session_class_setup", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"session_id", "standard_id", "section_id"})
 })
-public class SessionClassSetup {
+public class SessionClassSetup extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

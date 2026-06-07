@@ -2,17 +2,22 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Data
-@Table(name = "subjects")
-public class Subject {
+@EqualsAndHashCode(callSuper = true)
+@Table(name = "subjects", uniqueConstraints = {
+	    // Ab Subject Name sirf ek particular school ke andar unique rahega
+	    @UniqueConstraint(columnNames = {"gradeName", "school_profile_id"})
+	})
+public class Subject extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String subjectName; // e.g., "Mathematics", "Hindi"
 
     private String subjectCode; // e.g., "MAT-101" (Optional)

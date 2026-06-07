@@ -6,9 +6,10 @@ import lombok.*;
 @Entity
 @Table(name = "users")
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {	
+public class User extends BaseTenantEntity{	
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -46,7 +47,5 @@ public class User {
     // We can use a simple String role for now
     private String role; // e.g., "ADMIN", "TEACHER", "STUDENT"
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "school_profile_id")
-    private SchoolProfile schoolProfile;
+  
 }

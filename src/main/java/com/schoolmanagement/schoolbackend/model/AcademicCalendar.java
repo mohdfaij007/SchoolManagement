@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @Table(name = "academic_calendar", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"academic_session_id", "date"})
 })
-public class AcademicCalendar extends Auditable<String> {
+public class AcademicCalendar extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

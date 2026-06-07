@@ -8,12 +8,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.schoolmanagement.schoolbackend.enums.Gender;
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Student {
+@Table(uniqueConstraints = {
+    // Ab Admission sirf ek particular school ke andar unique rahega
+    @UniqueConstraint(columnNames = {"gradeName", "school_profile_id"})
+})
+public class Student extends BaseTenantEntity{
 	
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +34,7 @@ public class Student {
     private LocalDate dateOfBirth;
 
     // A unique identification number (e.g., admission number)
-    @Column(unique = true, nullable = false)
+    @Column( nullable = false)
     private String admissionNumber;
 
 //    private String grade;
@@ -74,6 +80,8 @@ public class Student {
     
     private String tcNumber;
     
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
     
  // --- NEW LINKS TO MASTERS ---
 
@@ -86,11 +94,7 @@ public class Student {
     private String profilePhoto;
     
     
- // --- MULTI-TENANT LINK ---
-    @ManyToOne
-    @JoinColumn(name = "school_profile_id")
-    private SchoolProfile schoolProfile;
-    
+
     
     
     

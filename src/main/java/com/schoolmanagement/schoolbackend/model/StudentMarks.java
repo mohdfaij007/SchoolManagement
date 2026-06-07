@@ -2,6 +2,7 @@ package com.schoolmanagement.schoolbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
@@ -10,8 +11,9 @@ import lombok.NoArgsConstructor;
     @UniqueConstraint(columnNames = {"exam_subject_mapping_id", "student_id"})
 })
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
-public class StudentMarks {
+public class StudentMarks extends BaseTenantEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

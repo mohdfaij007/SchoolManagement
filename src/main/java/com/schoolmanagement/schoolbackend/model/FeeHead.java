@@ -11,12 +11,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 
 @Entity
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Table(name = "fee_heads")
-public class FeeHead {
+public class FeeHead extends BaseTenantEntity{
 	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
