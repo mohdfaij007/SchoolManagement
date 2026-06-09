@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = true)
 @Table(name = "academic_sessions", uniqueConstraints = {
 	    // Ab session Name sirf ek particular school ke andar unique rahega
-	    @UniqueConstraint(columnNames = {"gradeName", "school_profile_id"})
+	    @UniqueConstraint(columnNames = {"sessionName", "school_profile_id"})
 	})
 public class AcademicSession extends BaseTenantEntity{
 

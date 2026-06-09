@@ -151,6 +151,23 @@ public class StudentService {
         student.setLastName(studentDetails.getLastName());
         student.setDateOfBirth(studentDetails.getDateOfBirth());
         student.setContactPhone(studentDetails.getContactPhone());
+        student.setFatherName(studentDetails.getFatherName());
+        student.setMotherName(studentDetails.getMotherName());
+        student.setEmail(studentDetails.getEmail());
+        student.setAadharNumber(studentDetails.getAadharNumber());
+        student.setFatherOccupation(studentDetails.getFatherOccupation());
+        student.setMotherOccupation(studentDetails.getMotherOccupation());
+        student.setPrimaryMobile(studentDetails.getPrimaryMobile());
+        student.setSecondaryMobile(studentDetails.getSecondaryMobile());
+        student.setCurrentAddres(studentDetails.getCurrentAddres());
+        student.setCity(studentDetails.getCity());
+        student.setPincode(studentDetails.getPincode());
+        student.setIsAddressSame(studentDetails.getIsAddressSame());
+        student.setPermanentAddress(studentDetails.getPermanentAddress());
+        student.setPrevSchoolName(studentDetails.getPrevSchoolName());
+        student.setPrevGrade(studentDetails.getPrevGrade());
+        student.setTcNumber(studentDetails.getTcNumber());
+        student.setGender(Gender.valueOf(studentDetails.getGender().toUpperCase()));
 
         // Update current enrollment if Class/Section changed (Optional, depend karta hai aap kaise update karana chahte ho)
         StudentEnrollment currentEnrollment = studentEnrollmentRepository.findByStudentIdAndIsCurrentActiveTrue(id);

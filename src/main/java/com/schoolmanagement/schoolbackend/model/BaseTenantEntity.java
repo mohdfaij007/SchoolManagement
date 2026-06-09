@@ -6,6 +6,7 @@ import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.ParamDef;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.schoolmanagement.schoolbackend.security.tenant.TenantContext;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -30,4 +31,22 @@ public abstract class BaseTenantEntity extends Auditable<String> {
 //	toh @JsonIgnore nhi lagana hai. Uski jagah ye annotation lagana hai
 //	jisse Jackson proxy ke kachre ko ignore kar dega aur code nahi fatega:
 //	@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+	
+	
+	
+	// Yeh method database me INSERT hone se theek pehle chalega
+    @PrePersist
+    public void prePersistTenant() {
+        if (this.schoolProfile == null) {
+            Long currentTenantId = TenantContext.getCurrentTenant();
+            
+            // Agar ThreadLocal me ID hai, toh dummy SchoolProfile banakar auto-set kar do
+            // Super Admin ko handle karne ke liye null check lagaya hai
+            if (currentTenantId != null) {
+                SchoolProfile profile = new SchoolProfile();
+                profile.setId(currentTenantId);
+                this.schoolProfile = profile;
+            }
+        }
+    }
 }

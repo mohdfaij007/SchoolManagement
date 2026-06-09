@@ -17,7 +17,7 @@ import com.schoolmanagement.schoolbackend.enums.Gender;
 @AllArgsConstructor
 @Table(uniqueConstraints = {
     // Ab Admission sirf ek particular school ke andar unique rahega
-    @UniqueConstraint(columnNames = {"gradeName", "school_profile_id"})
+    @UniqueConstraint(columnNames = {"admissionNumber", "school_profile_id"})
 })
 public class Student extends BaseTenantEntity{
 	

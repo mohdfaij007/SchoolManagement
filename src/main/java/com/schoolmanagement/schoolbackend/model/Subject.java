@@ -9,7 +9,7 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Table(name = "subjects", uniqueConstraints = {
 	    // Ab Subject Name sirf ek particular school ke andar unique rahega
-	    @UniqueConstraint(columnNames = {"gradeName", "school_profile_id"})
+	    @UniqueConstraint(columnNames = {"subjectName", "school_profile_id"})
 	})
 public class Subject extends BaseTenantEntity{
 
